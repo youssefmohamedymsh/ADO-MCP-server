@@ -1,0 +1,50 @@
+import { z } from "zod";
+import { adoClient } from "../lib/adoClient.js";
+import type { PatchOperation, WorkItem } from "../types.js";
+
+export const updateWorkItemSchema = {
+  workItemId: z.number().describe("The numeric ID of the work item to update"),
+  state:      z.string().optional().describe("New state e.g. Active, Resolved, Closed, Ready for Test"),
+  title:      z.string().optional().describe("New title for the work item"),
+  comment:    z.string().optional().describe("Comment to add to the discussion / history"),
+  priority:   z.number().min(1).max(4).optional().describe("Updated priority 1–4"),
+};
+
+export const updateWorkItemDescription =
+  "Update the state, title, priority, or add a comment to any Azure DevOps work item (User Story, Test Case, Bug, Task) by its numeric ID.";
+
+export async function updateWorkItem(input: {
+  workItemId: number;
+  state?:     string;
+  title?:     string;
+  comment?:   string;
+  priority?:  number;
+}): Promise<string> {
+  const { workItemId, state, title, comment, priority } = input;
+
+  const ops: PatchOperation[] = [
+    ...(state    ? [{ op: "add" as const, path: "/fields/System.State",                    value: state    }] : []),
+    ...(title    ? [{ op: "add" as const, path: "/fields/System.Title",                    value: title    }] : []),
+    ...(comment  ? [{ op: "add" as const, path: "/fields/System.History",                  value: comment  }] : []),
+    ...(priority ? [{ op: "add" as const, path: "/fields/Microsoft.VSTS.Common.Priority",  value: priority }] : []),
+  ];
+
+  if (ops.length === 0) {
+    return "No fields provided to update. Please specify at least one of: state, title, comment, priority.";
+  }
+
+  const res = await adoClient.patch<WorkItem>(
+    `/wit/workitems/${workItemId}?api-version=7.0`,
+    ops,
+    { headers: { "Content-Type": "application/json-patch+json" } }
+  );
+
+  return JSON.stringify({
+    success:    true,
+    workItemId,
+    newState:   res.data.fields["System.State"],
+    title:      res.data.fields["System.Title"],
+    updatedFields: Object.keys(ops.map(o => o.path)),
+    url:        res.data._links?.html.href,
+  }, null, 2);
+}
