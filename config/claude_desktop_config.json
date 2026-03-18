@@ -1,13 +1,21 @@
 {
-  "_comment": "Add the 'mcpServers' block below into your existing Claude Desktop config file.",
-  "_mac_path": "~/Library/Application Support/Claude/claude_desktop_config.json",
-  "_windows_path": "%APPDATA%\\Claude\\claude_desktop_config.json",
-  "_instructions": "Replace the placeholder values with your actual paths and credentials, then restart Claude Desktop.",
-
   "mcpServers": {
     "azure-devops-qc": {
-      "command": "npx",
-      "args": ["tsx", "/ABSOLUTE/PATH/TO/ado-mcp-server/src/server.ts"]
+      "command": "node",
+      "args": [
+        "D:\\ado-mcp-server\\dist\\server.js"
+      ],
+      "env": {
+        "ADO_ORG": "intcorecompany",
+        "ADO_PROJECT": "Congora",
+        "ADO_PAT": "***REMOVED***"
+      }
     }
+  },
+  "preferences": {
+    "coworkScheduledTasksEnabled": true,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "chat",
+    "coworkWebSearchEnabled": false
   }
 }
