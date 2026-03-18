@@ -6,16 +6,29 @@ create test cases, log bugs, and manage work items conversationally.
 
 ---
 
-## Tools Included
+## Tools Included (14 Total)
 
+### Query & Retrieve
 | Tool | Description |
 |---|---|
-| `get_user_stories` | Fetch stories by sprint, state, or area path |
+| `get_user_stories` | Fetch user stories by sprint, state, or area path with filters |
+| `get_work_item` | Retrieve a single work item by ID with full details |
+| `get_child_work_items` | Get all child items (tasks, subtasks) of a work item |
+| `get_test_cases_for_story` | List all test cases linked to a user story |
+| `get_team_members` | Fetch team members and their details from the project |
+| `get_test_runs` | Retrieve recent test runs with pass/fail counts |
+| `get_sprint_coverage` | Report test coverage % for stories in a sprint |
+
+### Create & Manage
+| Tool | Description |
+|---|---|
 | `create_test_case` | Create a test case with steps and link to a story |
-| `update_work_item` | Update state, title, or add a comment to any work item |
-| `get_test_cases_for_story` | List all test cases linked to a story |
-| `create_bug` | Log a bug with repro steps, linked to a test case |
-| `get_sprint_coverage` | Report % of stories in a sprint that have test coverage |
+| `create_bug` | Log a bug with reproduction steps, linked to a test case |
+| `create_child_task` | Create a child task and link it to a parent work item |
+| `update_work_item` | Update state, title, or add comments to any work item |
+| `assign_work_item` | Assign a work item to a team member |
+| `bulk_assign_work_items` | Assign multiple work items to the same user |
+| `link_work_items` | Create relationships between work items (parent/child, related, etc) |
 
 ---
 
@@ -68,18 +81,41 @@ npm test           # Run unit tests
 npm run build      # Compile to dist/
 ```
 
+### Validation
+
+Before committing, validate that all tool files are properly exported:
+
+```bash
+node scripts/validateTools.mjs
+```
+
+This script checks:
+- All tool files exist and have proper exports
+- Tool exports match server registrations
+- TypeScript compilation succeeds
+
 ---
 
 ## Example Prompts
 
 Once connected to Claude, you can say things like:
 
+### Query & Retrieve
 - *"Show me all active user stories in MyProject\\Sprint 4"*
-- *"Create 3 test cases for user story #1042 and link them to it"*
-- *"What test cases does story #887 have?"*
-- *"Mark work item #2031 as Resolved and add a comment saying regression passed"*
-- *"Log a bug for test case #1100 — the login button doesn't respond on mobile"*
+- *"Get details for work item #1042"*
+- *"What child tasks are assigned to story #887?"*
+- *"Who are the team members on this project?"*
+- *"What test runs have failed recently?"*
 - *"What's the test coverage for Sprint 3?"*
+
+### Create & Update
+- *"Create 3 test cases for user story #1042 and link them to it"*
+- *"Log a bug for test case #1100 — the login button doesn't respond on mobile"*
+- *"Create a child task under story #1042 to review acceptance criteria"*
+- *"Mark work item #2031 as Resolved and add a comment saying regression passed"*
+- *"Assign work item #1050 to John Smith"*
+- *"Assign all bugs in Sprint 4 to the QA team lead"*
+- *"Link work item #999 as a parent to #1000, #1001, and #1002"*
 
 ---
 
@@ -88,23 +124,36 @@ Once connected to Claude, you can say things like:
 ```
 ado-mcp-server/
 ├── src/
-│   ├── tools/              # One file per MCP tool
+│   ├── tools/                    # One file per MCP tool (14 total)
 │   │   ├── getUserStories.ts
-│   │   ├── createTestCase.ts
-│   │   ├── updateWorkItem.ts
+│   │   ├── getWorkItem.ts
+│   │   ├── getChildWorkItems.ts
 │   │   ├── getTestCasesForStory.ts
+│   │   ├── getTeamMembers.ts
+│   │   ├── getTestRuns.ts
+│   │   ├── getSprintCoverage.ts
+│   │   ├── createTestCase.ts
 │   │   ├── createBug.ts
-│   │   └── getSprintCoverage.ts
-│   ├── lib/                # Shared utilities
-│   │   ├── adoClient.ts    # Axios instance with PAT auth
-│   │   ├── formatSteps.ts  # ADO test steps XML formatter
-│   │   └── wiql.ts         # WIQL query helper
-│   ├── server.ts           # Entry point — registers all tools
-│   └── types.ts            # Shared TypeScript interfaces
+│   │   ├── createChildTask.ts
+│   │   ├── updateWorkItem.ts
+│   │   ├── assignWorkItem.ts
+│   │   ├── bulkAssignWorkItems.ts
+│   │   └── linkWorkItems.ts
+│   ├── lib/                      # Shared utilities
+│   │   ├── adoClient.ts          # Axios instance with PAT auth
+│   │   ├── formatSteps.ts        # ADO test steps XML formatter
+│   │   └── wiql.ts               # WIQL query helper
+│   ├── server.ts                 # Entry point — registers all tools
+│   └── types.ts                  # Shared TypeScript interfaces
 ├── config/
-│   ├── .env.example        # Template — commit this
+│   ├── .env.example              # Template — commit this
 │   └── claude_desktop_config.json
-├── tests/                  # Unit tests (vitest)
+├── tests/                        # Unit + validation tests
+├── scripts/
+│   └── validateTools.mjs         # Tool export validation script
+├── .github/
+│   └── workflows/
+│       └── test.yml              # CI/CD - tests on every push/PR
 ├── package.json
 ├── tsconfig.json
 └── README.md
