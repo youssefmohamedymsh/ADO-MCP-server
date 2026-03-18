@@ -69,7 +69,7 @@ describe("Tool Export Validation (Static Analysis)", () => {
           results.valid++;
         } else {
           results.invalid++;
-          const missing = [];
+          const missing: string[] = [];
           if (!hasFunction) missing.push("function");
           if (!hasSchema) missing.push("Schema");
           if (!hasDescription) missing.push("Description");
@@ -95,7 +95,7 @@ describe("Tool Export Validation (Static Analysis)", () => {
     const serverContent = readFileSync(serverPath, "utf-8");
 
     const importRegex = /import\s+\{\s*(\w+),\s+(\w+),\s+(\w+)\s*\}\s+from\s+['"]\.\/tools\/(\w+)/g;
-    const importedTools = [];
+    const importedTools: string[] = [];
     let match;
 
     while ((match = importRegex.exec(serverContent)) !== null) {
@@ -118,7 +118,7 @@ describe("Tool Export Validation (Static Analysis)", () => {
     const serverContent = readFileSync(serverPath, "utf-8");
 
     const toolRegex = /server\.tool\(\s*["'](\w+)/g;
-    const registeredTools = [];
+    const registeredTools: string[] = [];
     let match;
 
     while ((match = toolRegex.exec(serverContent)) !== null) {
