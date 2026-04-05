@@ -18,6 +18,7 @@ import { linkWorkItems,         linkWorkItemsSchema,         linkWorkItemsDescri
 import { getTeamMembers,        getTeamMembersSchema,        getTeamMembersDescription        } from "./tools/getTeamMembers.js";
 import { bulkAssignWorkItems,   bulkAssignWorkItemsSchema,   bulkAssignWorkItemsDescription   } from "./tools/bulkAssignWorkItems.js";
 import { getTestRuns,           getTestRunsSchema,           getTestRunsDescription           } from "./tools/getTestRuns.js";
+import { createUserStory,       createUserStorySchema,       createUserStoryDescription       } from "./tools/createUserStory.js";
 
 // ── Create MCP server ─────────────────────────────────────────────────────────
 const server = new McpServer({
@@ -82,6 +83,13 @@ server.tool("get_test_runs",            getTestRunsDescription,           getTes
   content: [{ type: "text", text: await getTestRuns(input) }],
 }));
 
+server.tool("create_user_story",        createUserStoryDescription,       createUserStorySchema,       async (input: {
+  title: string; description?: string; acceptanceCriteria?: string; iterationPath?: string;
+  areaPath?: string; assignedTo?: string; priority?: number; tags?: string;
+}) => ({
+  content: [{ type: "text", text: await createUserStory(input) }],
+}));
+
 // ── Start server ──────────────────────────────────────────────────────────────
 const toolsRegistered = [
   "get_user_stories",
@@ -98,6 +106,7 @@ const toolsRegistered = [
   "get_team_members",
   "bulk_assign_work_items",
   "get_test_runs",
+  "create_user_story",
 ];
 
 const transport = new StdioServerTransport();
