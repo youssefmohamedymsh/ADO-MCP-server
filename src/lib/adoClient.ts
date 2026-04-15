@@ -41,17 +41,52 @@ function createAdoClient(config: AdoClientConfig): AxiosInstance {
   return client;
 }
 
-// Singleton — reads from environment variables set by the MCP host
-const config: AdoClientConfig = {
-  org:     process.env.ADO_ORG     ?? "",
-  project: process.env.ADO_PROJECT ?? "",
-  pat:     process.env.ADO_PAT     ?? "",
-};
+// Read environment variables set by the MCP host
+const ADO_ORG_ENV     = process.env.ADO_ORG     ?? "";
+const ADO_PROJECT_ENV = process.env.ADO_PROJECT ?? "";
+const ADO_PAT_ENV     = process.env.ADO_PAT     ?? "";
 
-if (!config.org || !config.project || !config.pat) {
-  throw new Error("Missing required environment variables: ADO_ORG, ADO_PROJECT, ADO_PAT");
+if (!ADO_ORG_ENV || !ADO_PAT_ENV) {
+  throw new Error("Missing required environment variables: ADO_ORG, ADO_PAT");
 }
 
-export const adoClient = createAdoClient(config);
-export const ADO_ORG     = config.org;
-export const ADO_PROJECT = config.project;
+export const ADO_ORG     = ADO_ORG_ENV;
+export const ADO_PROJECT = ADO_PROJECT_ENV;
+
+// Cache clients per project to avoid re-creating axios instances
+const clientCache = new Map<string, AxiosInstance>();
+
+if (ADO_PROJECT) {
+  clientCache.set(ADO_PROJECT, createAdoClient({ org: ADO_ORG, project: ADO_PROJECT, pat: ADO_PAT_ENV }));
+}
+
+/**
+ * Returns an Axios client scoped to the given project.
+ * Falls back to the default project from env if none is provided.
+ * Clients are cached per project name.
+ */
+export function getClient(project?: string): AxiosInstance {
+  const p = resolveProject(project);
+  if (!clientCache.has(p)) {
+    clientCache.set(p, createAdoClient({ org: ADO_ORG, project: p, pat: ADO_PAT_ENV }));
+  }
+  return clientCache.get(p)!;
+}
+
+/**
+ * Resolves the project name: uses the provided value, or falls back to the
+ * default from the ADO_PROJECT environment variable.
+ * Throws if neither is available.
+ */
+export function resolveProject(project?: string): string {
+  const p = project ?? ADO_PROJECT;
+  if (!p) {
+    throw new Error("No project specified and ADO_PROJECT environment variable is not set.");
+  }
+  return p;
+}
+
+// Default client for backward compatibility
+export const adoClient = ADO_PROJECT
+  ? clientCache.get(ADO_PROJECT)!
+  : (null as unknown as AxiosInstance);

@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { adoClient, ADO_ORG, ADO_PROJECT } from "../lib/adoClient.js";
+import { getClient, ADO_ORG, resolveProject } from "../lib/adoClient.js";
 
 export const getTeamMembersSchema = {
+  project:  z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   teamName: z.string().optional().describe("Team name to fetch members for — defaults to the project's default team"),
 };
 
@@ -9,14 +10,16 @@ export const getTeamMembersDescription =
   "List all members of a project team. Useful for finding display names and emails for assignment.";
 
 export async function getTeamMembers(input: {
+  project?: string;
   teamName?: string;
 }): Promise<string> {
-  const { teamName } = input;
+  const { project, teamName } = input;
+  const projectName = resolveProject(project);
 
-  const team = teamName ?? `${ADO_PROJECT} Team`;
+  const team = teamName ?? `${projectName} Team`;
 
-  const res = await adoClient.get<{ value: any[] }>(
-    `/projects/${ADO_PROJECT}/teams/${encodeURIComponent(team)}/members?api-version=7.1`,
+  const res = await getClient(project).get<{ value: any[] }>(
+    `/projects/${projectName}/teams/${encodeURIComponent(team)}/members?api-version=7.1`,
     { baseURL: `https://dev.azure.com/${ADO_ORG}` }
   );
 

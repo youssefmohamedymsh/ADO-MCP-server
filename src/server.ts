@@ -84,7 +84,7 @@ server.tool("get_test_runs",            getTestRunsDescription,           getTes
 }));
 
 server.tool("create_user_story",        createUserStoryDescription,       createUserStorySchema,       async (input: {
-  title: string; description?: string; acceptanceCriteria?: string; iterationPath?: string;
+  project?: string; title: string; description?: string; acceptanceCriteria?: string; iterationPath?: string;
   areaPath?: string; assignedTo?: string; priority?: number; tags?: string;
 }) => ({
   content: [{ type: "text", text: await createUserStory(input) }],

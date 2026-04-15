@@ -1,19 +1,21 @@
 import { z } from "zod";
-import { adoClient } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { WorkItem } from "../types.js";
 
 export const getTestCasesForStorySchema = {
+  project: z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   storyId: z.number().describe("The numeric ID of the user story"),
 };
 
 export const getTestCasesForStoryDescription =
   "Return all test cases linked to a specific user story via the 'Tested By' relation. Shows test case IDs, titles, and current states.";
 
-export async function getTestCasesForStory(input: { storyId: number }): Promise<string> {
-  const { storyId } = input;
+export async function getTestCasesForStory(input: { project?: string; storyId: number }): Promise<string> {
+  const { project, storyId } = input;
+  const client = getClient(project);
 
   // Fetch the story with its relations
-  const storyRes = await adoClient.get<WorkItem>(
+  const storyRes = await client.get<WorkItem>(
     `/wit/workitems/${storyId}?$expand=relations&api-version=7.0`
   );
 
@@ -35,7 +37,7 @@ export async function getTestCasesForStory(input: { storyId: number }): Promise<
   // Extract IDs from relation URLs
   const tcIds = tcRelations.map((r) => r.url.split("/").pop()).join(",");
 
-  const tcRes = await adoClient.get<{ value: WorkItem[] }>(
+  const tcRes = await client.get<{ value: WorkItem[] }>(
     `/wit/workitems?ids=${tcIds}&fields=System.Id,System.Title,System.State,Microsoft.VSTS.Common.Priority&api-version=7.0`
   );
 

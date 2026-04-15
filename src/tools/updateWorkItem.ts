@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { PatchOperation, WorkItem } from "../types.js";
 
 export const updateWorkItemSchema = {
+  project:    z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   workItemId: z.number().describe("The numeric ID of the work item to update"),
   state:      z.string().optional().describe("New state e.g. Active, Resolved, Closed, Ready for Test"),
   title:      z.string().optional().describe("New title for the work item"),
@@ -14,13 +15,14 @@ export const updateWorkItemDescription =
   "Update the state, title, priority, or add a comment to any Azure DevOps work item (User Story, Test Case, Bug, Task) by its numeric ID.";
 
 export async function updateWorkItem(input: {
+  project?:   string;
   workItemId: number;
   state?:     string;
   title?:     string;
   comment?:   string;
   priority?:  number;
 }): Promise<string> {
-  const { workItemId, state, title, comment, priority } = input;
+  const { project, workItemId, state, title, comment, priority } = input;
 
   const ops: PatchOperation[] = [
     ...(state    ? [{ op: "add" as const, path: "/fields/System.State",                    value: state    }] : []),
@@ -33,7 +35,7 @@ export async function updateWorkItem(input: {
     return "No fields provided to update. Please specify at least one of: state, title, comment, priority.";
   }
 
-  const res = await adoClient.patch<WorkItem>(
+  const res = await getClient(project).patch<WorkItem>(
     `/wit/workitems/${workItemId}?api-version=7.0`,
     ops,
     { headers: { "Content-Type": "application/json-patch+json" } }

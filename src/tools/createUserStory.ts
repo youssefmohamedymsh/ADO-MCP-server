@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient, ADO_ORG, ADO_PROJECT } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { PatchOperation, WorkItem } from "../types.js";
 
 export const createUserStorySchema = {
+  project:            z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   title:              z.string().min(1).describe("Title of the user story"),
   description:        z.string().optional().describe("Detailed description of the user story (supports HTML)"),
   acceptanceCriteria: z.string().optional().describe("Acceptance criteria for the user story (supports HTML)"),
@@ -17,6 +18,7 @@ export const createUserStoryDescription =
   "Create a new User Story work item in Azure DevOps with title, description, acceptance criteria, and optional sprint assignment.";
 
 export async function createUserStory(input: {
+  project?:            string;
   title:               string;
   description?:        string;
   acceptanceCriteria?: string;
@@ -27,6 +29,7 @@ export async function createUserStory(input: {
   tags?:               string;
 }): Promise<string> {
   const {
+    project,
     title,
     description,
     acceptanceCriteria,
@@ -49,7 +52,7 @@ export async function createUserStory(input: {
     ...(tags               ? [{ op: "add" as const, path: "/fields/System.Tags",                               value: tags               }] : []),
   ];
 
-  const res = await adoClient.post<WorkItem>(
+  const res = await getClient(project).post<WorkItem>(
     `/wit/workitems/$User%20Story?api-version=7.1`,
     patchDoc,
     { headers: { "Content-Type": "application/json-patch+json" } }
