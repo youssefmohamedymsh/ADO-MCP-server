@@ -19,6 +19,16 @@ import { getTeamMembers,        getTeamMembersSchema,        getTeamMembersDescr
 import { bulkAssignWorkItems,   bulkAssignWorkItemsSchema,   bulkAssignWorkItemsDescription   } from "./tools/bulkAssignWorkItems.js";
 import { getTestRuns,           getTestRunsSchema,           getTestRunsDescription           } from "./tools/getTestRuns.js";
 import { createUserStory,       createUserStorySchema,       createUserStoryDescription       } from "./tools/createUserStory.js";
+import { getBugs,              getBugsSchema,               getBugsDescription               } from "./tools/getBugs.js";
+import { listProjects,         listProjectsSchema,          listProjectsDescription          } from "./tools/listProjects.js";
+import { getSprints,           getSprintsSchema,            getSprintsDescription            } from "./tools/getSprints.js";
+import { searchWorkItems,      searchWorkItemsSchema,       searchWorkItemsDescription       } from "./tools/searchWorkItems.js";
+import { getWorkItemComments,  getWorkItemCommentsSchema,   getWorkItemCommentsDescription   } from "./tools/getWorkItemComments.js";
+import { getAreaPaths,         getAreaPathsSchema,          getAreaPathsDescription          } from "./tools/getAreaPaths.js";
+import { addAttachment,        addAttachmentSchema,         addAttachmentDescription         } from "./tools/addAttachment.js";
+import { getWorkItemUpdates,   getWorkItemUpdatesSchema,    getWorkItemUpdatesDescription    } from "./tools/getWorkItemUpdates.js";
+import { createEpicOrFeature,  createEpicOrFeatureSchema,   createEpicOrFeatureDescription   } from "./tools/createEpicOrFeature.js";
+import { getBoardColumns,      getBoardColumnsSchema,       getBoardColumnsDescription       } from "./tools/getBoardColumns.js";
 
 // ── Create MCP server ─────────────────────────────────────────────────────────
 const server = new McpServer({
@@ -90,6 +100,46 @@ server.tool("create_user_story",        createUserStoryDescription,       create
   content: [{ type: "text", text: await createUserStory(input) }],
 }));
 
+server.tool("get_bugs",                 getBugsDescription,               getBugsSchema,               async (input) => ({
+  content: [{ type: "text", text: await getBugs(input) }],
+}));
+
+server.tool("list_projects",            listProjectsDescription,          listProjectsSchema,          async (input) => ({
+  content: [{ type: "text", text: await listProjects(input) }],
+}));
+
+server.tool("get_sprints",              getSprintsDescription,            getSprintsSchema,            async (input) => ({
+  content: [{ type: "text", text: await getSprints(input) }],
+}));
+
+server.tool("search_work_items",        searchWorkItemsDescription,       searchWorkItemsSchema,       async (input) => ({
+  content: [{ type: "text", text: await searchWorkItems(input) }],
+}));
+
+server.tool("get_work_item_comments",   getWorkItemCommentsDescription,   getWorkItemCommentsSchema,   async (input) => ({
+  content: [{ type: "text", text: await getWorkItemComments(input) }],
+}));
+
+server.tool("get_area_paths",           getAreaPathsDescription,          getAreaPathsSchema,          async (input) => ({
+  content: [{ type: "text", text: await getAreaPaths(input) }],
+}));
+
+server.tool("add_attachment",            addAttachmentDescription,         addAttachmentSchema,         async (input) => ({
+  content: [{ type: "text", text: await addAttachment(input) }],
+}));
+
+server.tool("get_work_item_updates",     getWorkItemUpdatesDescription,    getWorkItemUpdatesSchema,    async (input) => ({
+  content: [{ type: "text", text: await getWorkItemUpdates(input) }],
+}));
+
+server.tool("create_epic_or_feature",    createEpicOrFeatureDescription,   createEpicOrFeatureSchema,   async (input) => ({
+  content: [{ type: "text", text: await createEpicOrFeature(input) }],
+}));
+
+server.tool("get_board_columns",         getBoardColumnsDescription,       getBoardColumnsSchema,       async (input) => ({
+  content: [{ type: "text", text: await getBoardColumns(input) }],
+}));
+
 // ── Start server ──────────────────────────────────────────────────────────────
 const toolsRegistered = [
   "get_user_stories",
@@ -107,6 +157,16 @@ const toolsRegistered = [
   "bulk_assign_work_items",
   "get_test_runs",
   "create_user_story",
+  "get_bugs",
+  "list_projects",
+  "get_sprints",
+  "search_work_items",
+  "get_work_item_comments",
+  "get_area_paths",
+  "add_attachment",
+  "get_work_item_updates",
+  "create_epic_or_feature",
+  "get_board_columns",
 ];
 
 const transport = new StdioServerTransport();
