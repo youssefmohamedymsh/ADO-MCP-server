@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { PatchOperation, WorkItem } from "../types.js";
 
 export const bulkAssignWorkItemsSchema = {
+  project:     z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   workItemIds: z.array(z.number()).min(1).describe("List of numeric work item IDs to assign"),
   assignedTo:  z.string().describe("Display name or email of the user to assign all items to (e.g. 'Eman Hedia')"),
 };
@@ -11,10 +12,12 @@ export const bulkAssignWorkItemsDescription =
   "Assign multiple work items to a user in one call. Returns a summary of successes and any failures.";
 
 export async function bulkAssignWorkItems(input: {
+  project?:    string;
   workItemIds: number[];
   assignedTo:  string;
 }): Promise<string> {
-  const { workItemIds, assignedTo } = input;
+  const { project, workItemIds, assignedTo } = input;
+  const client = getClient(project);
 
   const results: { id: number; title?: string; success: boolean; error?: string }[] = [];
 
@@ -24,7 +27,7 @@ export async function bulkAssignWorkItems(input: {
         { op: "add", path: "/fields/System.AssignedTo", value: assignedTo },
       ];
 
-      const res = await adoClient.patch<WorkItem>(
+      const res = await client.patch<WorkItem>(
         `/wit/workitems/${id}?api-version=7.1`,
         patchDoc,
         { headers: { "Content-Type": "application/json-patch+json" } }

@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient, ADO_ORG, ADO_PROJECT } from "../lib/adoClient.js";
+import { getClient, ADO_ORG, resolveProject } from "../lib/adoClient.js";
 import type { PatchOperation, WorkItem } from "../types.js";
 
 export const createBugSchema = {
+  project:         z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   title:           z.string().min(1).describe("Bug title — be concise and specific"),
   reproSteps:      z.string().describe("Step-by-step reproduction steps (HTML or plain text)"),
   expectedResult:  z.string().describe("What should have happened"),
@@ -17,6 +18,7 @@ export const createBugDescription =
   "Log a Bug work item in Azure DevOps with reproduction steps, expected vs actual results, and optionally link it to the test case that found it.";
 
 export async function createBug(input: {
+  project?:         string;
   title:            string;
   reproSteps:       string;
   expectedResult:   string;
@@ -26,9 +28,10 @@ export async function createBug(input: {
   areaPath?:        string;
 }): Promise<string> {
   const {
-    title, reproSteps, expectedResult, actualResult,
+    project, title, reproSteps, expectedResult, actualResult,
     severity = "3 - Medium", linkedTestCaseId, areaPath,
   } = input;
+  const projectName = resolveProject(project);
 
   const fullReproSteps = `
     <div><b>Reproduction Steps:</b><br/>${reproSteps}</div>
@@ -49,13 +52,13 @@ export async function createBug(input: {
       path: "/relations/-",
       value: {
         rel: "Microsoft.VSTS.Common.TestedBy-Reverse",
-        url: `https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}/_apis/wit/workItems/${linkedTestCaseId}`,
+        url: `https://dev.azure.com/${ADO_ORG}/${projectName}/_apis/wit/workItems/${linkedTestCaseId}`,
         attributes: { comment: "Bug found during test execution" },
       },
     }] : []),
   ];
 
-  const res = await adoClient.post<WorkItem>(
+  const res = await getClient(project).post<WorkItem>(
     `/wit/workitems/$Bug?api-version=7.0`,
     patchDoc,
     { headers: { "Content-Type": "application/json-patch+json" } }

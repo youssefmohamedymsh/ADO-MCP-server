@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { WorkItem } from "../types.js";
 
 export const getWorkItemSchema = {
+  project:    z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   workItemId: z.number().describe("The numeric ID of the work item to fetch"),
 };
 
@@ -10,11 +11,12 @@ export const getWorkItemDescription =
   "Fetch full details of a single work item by its ID — including title, description, acceptance criteria, state, assignee, and type.";
 
 export async function getWorkItem(input: {
+  project?: string;
   workItemId: number;
 }): Promise<string> {
-  const { workItemId } = input;
+  const { project, workItemId } = input;
 
-  const res = await adoClient.get<WorkItem>(
+  const res = await getClient(project).get<WorkItem>(
     `/wit/workitems/${workItemId}?$expand=all&api-version=7.1`
   );
 

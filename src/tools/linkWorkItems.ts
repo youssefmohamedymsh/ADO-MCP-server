@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient, ADO_ORG, ADO_PROJECT } from "../lib/adoClient.js";
+import { getClient, ADO_ORG, resolveProject } from "../lib/adoClient.js";
 import type { PatchOperation, WorkItem } from "../types.js";
 
 export const linkWorkItemsSchema = {
+  project:   z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   sourceId:  z.number().describe("The numeric ID of the source work item"),
   targetId:  z.number().describe("The numeric ID of the target work item to link to"),
   linkType:  z.enum([
@@ -21,12 +22,14 @@ export const linkWorkItemsDescription =
   "Create a link between any two work items (e.g. parent-child, related, tested-by). Use TestedBy-Forward to link a story to its test case.";
 
 export async function linkWorkItems(input: {
+  project?: string;
   sourceId: number;
   targetId: number;
   linkType: string;
   comment?: string;
 }): Promise<string> {
-  const { sourceId, targetId, linkType, comment } = input;
+  const { project, sourceId, targetId, linkType, comment } = input;
+  const projectName = resolveProject(project);
 
   const patchDoc: PatchOperation[] = [
     {
@@ -34,13 +37,13 @@ export async function linkWorkItems(input: {
       path: "/relations/-",
       value: {
         rel: linkType,
-        url: `https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}/_apis/wit/workitems/${targetId}`,
+        url: `https://dev.azure.com/${ADO_ORG}/${projectName}/_apis/wit/workitems/${targetId}`,
         attributes: { comment: comment ?? "Linked by AI MCP Server." },
       },
     },
   ];
 
-  const res = await adoClient.patch<WorkItem>(
+  const res = await getClient(project).patch<WorkItem>(
     `/wit/workitems/${sourceId}?api-version=7.1`,
     patchDoc,
     { headers: { "Content-Type": "application/json-patch+json" } }

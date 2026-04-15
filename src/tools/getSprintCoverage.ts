@@ -1,22 +1,26 @@
 import { z } from "zod";
-import { adoClient } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import { runWiqlQuery } from "../lib/wiql.js";
 import type { SprintCoverage, WorkItem } from "../types.js";
 
 export const getSprintCoverageSchema = {
+  project:       z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   iterationPath: z.string().describe("Sprint path e.g. 'MyProject\\Sprint 3'"),
 };
 
 export const getSprintCoverageDescription =
   "Calculate the test coverage percentage for a sprint: how many user stories have at least one linked test case vs. those with none. Returns a coverage report with a list of uncovered stories.";
 
-export async function getSprintCoverage(input: { iterationPath: string }): Promise<string> {
-  const { iterationPath } = input;
+export async function getSprintCoverage(input: { project?: string; iterationPath: string }): Promise<string> {
+  const { project, iterationPath } = input;
+  const client = getClient(project);
 
   // Get all user stories in the sprint
   const stories = await runWiqlQuery(
     `[System.WorkItemType] = 'User Story' AND [System.IterationPath] = '${iterationPath}'`,
-    100
+    100,
+    undefined,
+    project,
   );
 
   if (stories.length === 0) {
@@ -31,7 +35,7 @@ export async function getSprintCoverage(input: { iterationPath: string }): Promi
   const coverageChecks = await Promise.all(
     stories.map(async (story): Promise<{ story: WorkItem; hasCoverage: boolean }> => {
       try {
-        const res = await adoClient.get<WorkItem>(
+        const res = await client.get<WorkItem>(
           `/wit/workitems/${story.id}?$expand=relations&api-version=7.0`
         );
         const relations = res.data.relations ?? [];

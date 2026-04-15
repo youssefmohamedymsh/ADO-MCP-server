@@ -1,4 +1,4 @@
-import { adoClient } from "./adoClient.js";
+import { getClient } from "./adoClient.js";
 import type { WiqlQueryResult, WorkItem } from "../types.js";
 
 const WORK_ITEM_FIELDS = [
@@ -21,14 +21,17 @@ const WORK_ITEM_FIELDS = [
 export async function runWiqlQuery(
   whereClause: string,
   top: number = 20,
-  extraFields?: string[]
+  extraFields?: string[],
+  project?: string,
 ): Promise<WorkItem[]> {
+  const client = getClient(project);
+
   const wiqlBody = {
     query: `SELECT [System.Id] FROM WorkItems WHERE ${whereClause} ORDER BY [System.CreatedDate] DESC`,
   };
 
   // Step 1: Get IDs via WIQL
-  const queryRes = await adoClient.post<WiqlQueryResult>(
+  const queryRes = await client.post<WiqlQueryResult>(
     `/wit/wiql?api-version=7.0&$top=${top}`,
     wiqlBody
   );
@@ -41,7 +44,7 @@ export async function runWiqlQuery(
     ? `${WORK_ITEM_FIELDS},${extraFields.join(",")}`
     : WORK_ITEM_FIELDS;
 
-  const detailRes = await adoClient.get<{ value: WorkItem[] }>(
+  const detailRes = await client.get<{ value: WorkItem[] }>(
     `/wit/workitems?ids=${ids.join(",")}&fields=${fields}&api-version=7.0`
   );
 
