@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient, ADO_ORG, ADO_PROJECT } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { WorkItem } from "../types.js";
 
 export const getChildWorkItemsSchema = {
+  project:  z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   parentId: z.number().describe("The numeric ID of the parent work item"),
 };
 
@@ -10,12 +11,14 @@ export const getChildWorkItemsDescription =
   "Get all child work items (tasks, test cases, etc.) of a given parent work item.";
 
 export async function getChildWorkItems(input: {
+  project?: string;
   parentId: number;
 }): Promise<string> {
-  const { parentId } = input;
+  const { project, parentId } = input;
+  const client = getClient(project);
 
   // Fetch parent with relations expanded
-  const parentRes = await adoClient.get<WorkItem>(
+  const parentRes = await client.get<WorkItem>(
     `/wit/workitems/${parentId}?$expand=relations&api-version=7.1`
   );
 
@@ -32,7 +35,7 @@ export async function getChildWorkItems(input: {
     .map((r: any) => r.url.split("/").pop())
     .join(",");
 
-  const batchRes = await adoClient.get<{ value: WorkItem[] }>(
+  const batchRes = await client.get<{ value: WorkItem[] }>(
     `/wit/workitems?ids=${childIds}&api-version=7.1`
   );
 

@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { adoClient } from "../lib/adoClient.js";
+import { getClient } from "../lib/adoClient.js";
 import type { PatchOperation, WorkItem } from "../types.js";
 
 export const assignWorkItemSchema = {
+  project:    z.string().optional().describe("Azure DevOps project name — defaults to the configured project"),
   workItemId: z.number().describe("The numeric ID of the work item to assign"),
   assignedTo: z.string().describe("Display name or email of the user (e.g. 'Eman Hedia' or 'eman@example.com')"),
 };
@@ -11,16 +12,17 @@ export const assignWorkItemDescription =
   "Assign any work item to a user by display name or email address.";
 
 export async function assignWorkItem(input: {
+  project?:   string;
   workItemId: number;
   assignedTo: string;
 }): Promise<string> {
-  const { workItemId, assignedTo } = input;
+  const { project, workItemId, assignedTo } = input;
 
   const patchDoc: PatchOperation[] = [
     { op: "add", path: "/fields/System.AssignedTo", value: assignedTo },
   ];
 
-  const res = await adoClient.patch<WorkItem>(
+  const res = await getClient(project).patch<WorkItem>(
     `/wit/workitems/${workItemId}?api-version=7.1`,
     patchDoc,
     { headers: { "Content-Type": "application/json-patch+json" } }
