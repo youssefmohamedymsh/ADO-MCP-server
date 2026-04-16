@@ -6,7 +6,7 @@ create test cases, log bugs, and manage work items conversationally.
 
 ---
 
-## Tools Included (14 Total)
+## Tools Included (24 Total)
 
 ### Query & Retrieve
 | Tool | Description |
@@ -18,6 +18,14 @@ create test cases, log bugs, and manage work items conversationally.
 | `get_team_members` | Fetch team members and their details from the project |
 | `get_test_runs` | Retrieve recent test runs with pass/fail counts |
 | `get_sprint_coverage` | Report test coverage % for stories in a sprint |
+| `get_bugs` | Retrieve bugs by sprint, state, or area with filters |
+| `get_work_item_comments` | Get all comments and discussions on a work item |
+| `get_work_item_updates` | Get revision history and state changes for a work item |
+| `get_sprints` | List all sprints/iterations in the project |
+| `get_area_paths` | List all area paths and team areas in the project |
+| `get_board_columns` | Get current board columns and workflow state |
+| `search_work_items` | Search work items using flexible query criteria |
+| `list_projects` | List all projects in the Azure DevOps organization |
 
 ### Create & Manage
 | Tool | Description |
@@ -25,10 +33,13 @@ create test cases, log bugs, and manage work items conversationally.
 | `create_test_case` | Create a test case with steps and link to a story |
 | `create_bug` | Log a bug with reproduction steps, linked to a test case |
 | `create_child_task` | Create a child task and link it to a parent work item |
-| `update_work_item` | Update state, title, or add comments to any work item |
+| `create_user_story` | Create a new user story with acceptance criteria |
+| `create_epic_or_feature` | Create an epic or feature work item |
+| `update_work_item` | Update state, title, priority, or add comments to any work item |
 | `assign_work_item` | Assign a work item to a team member |
 | `bulk_assign_work_items` | Assign multiple work items to the same user |
-| `link_work_items` | Create relationships between work items (parent/child, related, etc) |
+| `link_work_items` | Create relationships between work items (parent/child, related, tested-by, etc) |
+| `add_attachment` | Attach files to a work item |
 
 ---
 
@@ -96,6 +107,22 @@ This script checks:
 
 ---
 
+## Documentation
+
+For a detailed explanation of how the project is structured, how each component works, and how to implement new tools, see **[PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)**. This comprehensive guide covers:
+
+- Project architecture and data flow
+- MCP protocol and server communication
+- Core components (adoClient, wiql, formatSteps, types)
+- Tool implementation patterns
+- Configuration and setup steps
+- Example workflows
+- Common troubleshooting issues
+
+This is the recommended reading for team members learning the codebase.
+
+---
+
 ## Example Prompts
 
 Once connected to Claude, you can say things like:
@@ -107,15 +134,25 @@ Once connected to Claude, you can say things like:
 - *"Who are the team members on this project?"*
 - *"What test runs have failed recently?"*
 - *"What's the test coverage for Sprint 3?"*
+- *"List all bugs in the current sprint"*
+- *"Show me all comments on work item #2050"*
+- *"What changes have been made to story #1005 recently?"*
+- *"List all sprints in the project"*
+- *"What area paths does our team use?"*
+- *"Search for work items containing 'login'*"
+- *"What projects exist in our organization?"*
 
 ### Create & Update
 - *"Create 3 test cases for user story #1042 and link them to it"*
 - *"Log a bug for test case #1100 — the login button doesn't respond on mobile"*
 - *"Create a child task under story #1042 to review acceptance criteria"*
+- *"Create a new user story titled 'User authentication' with acceptance criteria"*
+- *"Create an epic called 'Payment System Redesign'"*
 - *"Mark work item #2031 as Resolved and add a comment saying regression passed"*
 - *"Assign work item #1050 to John Smith"*
 - *"Assign all bugs in Sprint 4 to the QA team lead"*
 - *"Link work item #999 as a parent to #1000, #1001, and #1002"*
+- *"Attach the test results PDF to work item #1200"*
 
 ---
 
@@ -124,21 +161,31 @@ Once connected to Claude, you can say things like:
 ```
 ado-mcp-server/
 ├── src/
-│   ├── tools/                    # One file per MCP tool (14 total)
-│   │   ├── getUserStories.ts
-│   │   ├── getWorkItem.ts
-│   │   ├── getChildWorkItems.ts
-│   │   ├── getTestCasesForStory.ts
-│   │   ├── getTeamMembers.ts
-│   │   ├── getTestRuns.ts
-│   │   ├── getSprintCoverage.ts
-│   │   ├── createTestCase.ts
-│   │   ├── createBug.ts
-│   │   ├── createChildTask.ts
-│   │   ├── updateWorkItem.ts
+│   ├── tools/                    # One file per MCP tool (24 total)
+│   │   ├── addAttachment.ts
 │   │   ├── assignWorkItem.ts
 │   │   ├── bulkAssignWorkItems.ts
-│   │   └── linkWorkItems.ts
+│   │   ├── createBug.ts
+│   │   ├── createChildTask.ts
+│   │   ├── createEpicOrFeature.ts
+│   │   ├── createTestCase.ts
+│   │   ├── createUserStory.ts
+│   │   ├── getAreaPaths.ts
+│   │   ├── getBoardColumns.ts
+│   │   ├── getBugs.ts
+│   │   ├── getChildWorkItems.ts
+│   │   ├── getSprintCoverage.ts
+│   │   ├── getSprints.ts
+│   │   ├── getTeamMembers.ts
+│   │   ├── getTestCasesForStory.ts
+│   │   ├── getTestRuns.ts
+│   │   ├── getUserStories.ts
+│   │   ├── getWorkItem.ts
+│   │   ├── getWorkItemComments.ts
+│   │   ├── getWorkItemUpdates.ts
+│   │   ├── linkWorkItems.ts
+│   │   ├── listProjects.ts
+│   │   └── searchWorkItems.ts
 │   ├── lib/                      # Shared utilities
 │   │   ├── adoClient.ts          # Axios instance with PAT auth
 │   │   ├── formatSteps.ts        # ADO test steps XML formatter
