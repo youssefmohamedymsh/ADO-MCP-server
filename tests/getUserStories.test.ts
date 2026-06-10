@@ -49,7 +49,9 @@ describe("getUserStories", () => {
     await getUserStories({ iterationPath: "MyProject\\Sprint 3" });
     expect(runWiqlQuery).toHaveBeenCalledWith(
       expect.stringContaining("System.IterationPath"),
-      expect.any(Number)
+      expect.any(Number),
+      undefined,
+      undefined
     );
   });
 });

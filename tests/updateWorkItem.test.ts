@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const { mockPatch } = vi.hoisted(() => ({ mockPatch: vi.fn() }));
+
 vi.mock("../src/lib/adoClient.js", () => ({
-  adoClient:   { patch: vi.fn() },
-  ADO_ORG:     "test-org",
-  ADO_PROJECT: "test-project",
+  getClient:      () => ({ patch: mockPatch }),
+  resolveProject: (p?: string) => p ?? "test-project",
+  ADO_ORG:        "test-org",
+  ADO_PROJECT:    "test-project",
 }));
 
 import { updateWorkItem } from "../src/tools/updateWorkItem.js";
-import { adoClient } from "../src/lib/adoClient.js";
 
 const mockResponse = {
   data: {
@@ -21,7 +23,7 @@ describe("updateWorkItem", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("updates state successfully", async () => {
-    vi.mocked(adoClient.patch).mockResolvedValue(mockResponse as any);
+    vi.mocked(mockPatch).mockResolvedValue(mockResponse as any);
     const result = await updateWorkItem({ workItemId: 200, state: "Resolved" });
     const parsed = JSON.parse(result);
     expect(parsed.success).toBe(true);
@@ -31,13 +33,13 @@ describe("updateWorkItem", () => {
   it("returns friendly message when no fields are provided", async () => {
     const result = await updateWorkItem({ workItemId: 200 });
     expect(result).toContain("No fields provided");
-    expect(adoClient.patch).not.toHaveBeenCalled();
+    expect(mockPatch).not.toHaveBeenCalled();
   });
 
   it("only sends patch ops for provided fields", async () => {
-    vi.mocked(adoClient.patch).mockResolvedValue(mockResponse as any);
+    vi.mocked(mockPatch).mockResolvedValue(mockResponse as any);
     await updateWorkItem({ workItemId: 200, state: "Active" });
-    const ops = vi.mocked(adoClient.patch).mock.calls[0][1] as any[];
+    const ops = vi.mocked(mockPatch).mock.calls[0][1] as any[];
     expect(ops).toHaveLength(1);
     expect(ops[0].path).toContain("State");
   });
