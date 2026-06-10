@@ -6,7 +6,12 @@ create test cases, log bugs, and manage work items conversationally.
 
 ---
 
-## Tools Included (24 Total)
+## Tools Included (26 Total)
+
+### Project Selection
+| Tool | Description |
+|---|---|
+| `set_project` | Select which project subsequent tools operate on, without passing `project` each call (run `list_projects` first to see names) |
 
 ### Query & Retrieve
 | Tool | Description |

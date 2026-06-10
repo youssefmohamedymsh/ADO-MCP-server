@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const { mockPost } = vi.hoisted(() => ({ mockPost: vi.fn() }));
+
 vi.mock("../src/lib/adoClient.js", () => ({
-  adoClient:   { post: vi.fn() },
-  ADO_ORG:     "test-org",
-  ADO_PROJECT: "test-project",
+  getClient:      () => ({ post: mockPost }),
+  resolveProject: (p?: string) => p ?? "test-project",
+  ADO_ORG:        "test-org",
+  ADO_PROJECT:    "test-project",
 }));
 
 import { createTestCase } from "../src/tools/createTestCase.js";
-import { adoClient } from "../src/lib/adoClient.js";
 
 const mockResponse = {
   data: {
@@ -24,7 +26,7 @@ describe("createTestCase", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("creates a test case and returns its ID and URL", async () => {
-    vi.mocked(adoClient.post).mockResolvedValue(mockResponse as any);
+    vi.mocked(mockPost).mockResolvedValue(mockResponse as any);
 
     const result = await createTestCase({
       title: "Login test",
@@ -41,7 +43,7 @@ describe("createTestCase", () => {
   });
 
   it("includes linked story relation when linkedStoryId is provided", async () => {
-    vi.mocked(adoClient.post).mockResolvedValue(mockResponse as any);
+    vi.mocked(mockPost).mockResolvedValue(mockResponse as any);
 
     await createTestCase({
       title: "Login test",
@@ -49,21 +51,21 @@ describe("createTestCase", () => {
       linkedStoryId: 42,
     });
 
-    const callArgs = vi.mocked(adoClient.post).mock.calls[0][1] as any[];
+    const callArgs = vi.mocked(mockPost).mock.calls[0][1] as any[];
     const relationOp = callArgs.find((op: any) => op.path === "/relations/-");
     expect(relationOp).toBeDefined();
     expect(relationOp.value.url).toContain("42");
   });
 
   it("formats steps as XML in the patch document", async () => {
-    vi.mocked(adoClient.post).mockResolvedValue(mockResponse as any);
+    vi.mocked(mockPost).mockResolvedValue(mockResponse as any);
 
     await createTestCase({
       title: "Steps test",
       steps: [{ action: "Click button", expected: "Modal appears" }],
     });
 
-    const callArgs = vi.mocked(adoClient.post).mock.calls[0][1] as any[];
+    const callArgs = vi.mocked(mockPost).mock.calls[0][1] as any[];
     const stepsOp = callArgs.find((op: any) => op.path.includes("TCM.Steps"));
     expect(stepsOp?.value).toContain("<steps");
     expect(stepsOp?.value).toContain("Click button");

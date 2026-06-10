@@ -29,6 +29,7 @@ import { addAttachment,        addAttachmentSchema,         addAttachmentDescrip
 import { getWorkItemUpdates,   getWorkItemUpdatesSchema,    getWorkItemUpdatesDescription    } from "./tools/getWorkItemUpdates.js";
 import { createEpicOrFeature,  createEpicOrFeatureSchema,   createEpicOrFeatureDescription   } from "./tools/createEpicOrFeature.js";
 import { getBoardColumns,      getBoardColumnsSchema,       getBoardColumnsDescription       } from "./tools/getBoardColumns.js";
+import { setProject,          setProjectSchema,            setProjectDescription            } from "./tools/setProject.js";
 
 // ── Create MCP server ─────────────────────────────────────────────────────────
 const server = new McpServer({
@@ -140,6 +141,10 @@ server.tool("get_board_columns",         getBoardColumnsDescription,       getBo
   content: [{ type: "text", text: await getBoardColumns(input) }],
 }));
 
+server.tool("set_project",               setProjectDescription,            setProjectSchema,            async (input) => ({
+  content: [{ type: "text", text: await setProject(input) }],
+}));
+
 // ── Start server ──────────────────────────────────────────────────────────────
 const toolsRegistered = [
   "get_user_stories",
@@ -167,6 +172,7 @@ const toolsRegistered = [
   "get_work_item_updates",
   "create_epic_or_feature",
   "get_board_columns",
+  "set_project",
 ];
 
 const transport = new StdioServerTransport();

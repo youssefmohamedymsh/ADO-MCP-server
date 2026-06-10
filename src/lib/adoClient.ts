@@ -1,6 +1,7 @@
 import "dotenv/config";
 import axios, { type AxiosInstance, type AxiosError, type AxiosResponse } from "axios";
 import type { AdoClientConfig } from "../types.js";
+import { getCurrentProject } from "./projectContext.js";
 
 /**
  * Creates a pre-configured Axios instance for Azure DevOps REST API calls.
@@ -74,14 +75,18 @@ export function getClient(project?: string): AxiosInstance {
 }
 
 /**
- * Resolves the project name: uses the provided value, or falls back to the
- * default from the ADO_PROJECT environment variable.
- * Throws if neither is available.
+ * Resolves the project name in priority order:
+ *   1. an explicit `project` argument (per-call override)
+ *   2. the project selected this session via the `set_project` tool
+ *   3. the ADO_PROJECT environment variable
+ * Throws if none is available.
  */
 export function resolveProject(project?: string): string {
-  const p = project ?? ADO_PROJECT;
+  const p = project ?? getCurrentProject() ?? process.env.ADO_PROJECT;
   if (!p) {
-    throw new Error("No project specified and ADO_PROJECT environment variable is not set.");
+    throw new Error(
+      "No project selected. Use the 'set_project' tool to choose a project, pass a 'project' argument, or set the ADO_PROJECT environment variable."
+    );
   }
   return p;
 }
