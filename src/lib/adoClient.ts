@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./loadEnv.js";
 import axios, { type AxiosInstance, type AxiosError, type AxiosResponse } from "axios";
 import type { AdoClientConfig } from "../types.js";
 import { getCurrentProject } from "./projectContext.js";
