@@ -11,6 +11,7 @@ export const createBugSchema = {
   severity:        z.enum(["1 - Critical", "2 - High", "3 - Medium", "4 - Low"]).optional()
                     .describe("Severity of the bug, default '3 - Medium'"),
   linkedTestCaseId: z.number().optional().describe("Test case ID that surfaced this bug"),
+  iterationPath:   z.string().optional().describe("Sprint/Iteration path e.g. 'MyProject\\Iteration 1'"),
   areaPath:        z.string().optional().describe("Area path for this bug"),
 };
 
@@ -25,11 +26,12 @@ export async function createBug(input: {
   actualResult:     string;
   severity?:        string;
   linkedTestCaseId?: number;
+  iterationPath?:   string;
   areaPath?:        string;
 }): Promise<string> {
   const {
     project, title, reproSteps, expectedResult, actualResult,
-    severity = "3 - Medium", linkedTestCaseId, areaPath,
+    severity = "3 - Medium", linkedTestCaseId, iterationPath, areaPath,
   } = input;
   const projectName = resolveProject(project);
 
@@ -46,6 +48,7 @@ export async function createBug(input: {
     { op: "add", path: "/fields/Microsoft.VSTS.TCM.ReproSteps",              value: fullReproSteps },
     { op: "add", path: "/fields/Microsoft.VSTS.Common.Severity",             value: severity },
     { op: "add", path: "/fields/System.History",                             value: "Bug logged by AI MCP Server." },
+    ...(iterationPath ? [{ op: "add" as const, path: "/fields/System.IterationPath", value: iterationPath }] : []),
     ...(areaPath ? [{ op: "add" as const, path: "/fields/System.AreaPath",  value: areaPath }] : []),
     ...(linkedTestCaseId ? [{
       op: "add" as const,
@@ -69,6 +72,8 @@ export async function createBug(input: {
     bugId:            res.data.id,
     title:            res.data.fields["System.Title"],
     severity,
+    iterationPath:    res.data.fields["System.IterationPath"],
+    areaPath:         res.data.fields["System.AreaPath"],
     linkedTestCaseId: linkedTestCaseId ?? null,
     url:              res.data._links?.html.href,
   }, null, 2);

@@ -8,6 +8,7 @@ export const createChildTaskSchema = {
   title:       z.string().min(1).describe("Title of the new child task"),
   assignedTo:  z.string().optional().describe("Display name or email of the user to assign the task to"),
   description: z.string().optional().describe("Optional description for the task"),
+  iterationPath: z.string().optional().describe("Sprint/Iteration path e.g. 'MyProject\\Iteration 1'"),
 };
 
 export const createChildTaskDescription =
@@ -19,8 +20,9 @@ export async function createChildTask(input: {
   title:        string;
   assignedTo?:  string;
   description?: string;
+  iterationPath?: string;
 }): Promise<string> {
-  const { project, parentId, title, assignedTo, description } = input;
+  const { project, parentId, title, assignedTo, description, iterationPath } = input;
   const projectName = resolveProject(project);
 
   const patchDoc: PatchOperation[] = [
@@ -35,8 +37,9 @@ export async function createChildTask(input: {
         attributes: { comment: "Child task created by MCP server" },
       },
     },
-    ...(assignedTo  ? [{ op: "add" as const, path: "/fields/System.AssignedTo",  value: assignedTo  }] : []),
-    ...(description ? [{ op: "add" as const, path: "/fields/System.Description", value: description }] : []),
+    ...(assignedTo    ? [{ op: "add" as const, path: "/fields/System.AssignedTo",    value: assignedTo    }] : []),
+    ...(description   ? [{ op: "add" as const, path: "/fields/System.Description",   value: description   }] : []),
+    ...(iterationPath ? [{ op: "add" as const, path: "/fields/System.IterationPath", value: iterationPath }] : []),
   ];
 
   const res = await getClient(project).post<WorkItem>(
@@ -48,10 +51,11 @@ export async function createChildTask(input: {
   const f = res.data.fields as Record<string, any>;
   return JSON.stringify({
     success:    true,
-    taskId:     res.data.id,
-    title:      f["System.Title"],
+    taskId:       res.data.id,
+    title:        f["System.Title"],
     parentId,
-    assignedTo: f["System.AssignedTo"]?.displayName ?? "Unassigned",
-    url:        res.data._links?.html.href,
+    assignedTo:   f["System.AssignedTo"]?.displayName ?? "Unassigned",
+    iterationPath: f["System.IterationPath"],
+    url:          res.data._links?.html.href,
   }, null, 2);
 }
