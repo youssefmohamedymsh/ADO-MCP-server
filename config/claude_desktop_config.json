@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "azure-devops-qc": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/ado-mcp-server/dist/server.js"
+      ],
+      "env": {
+        "ADO_ORG": "your-org",
+        "ADO_PROJECT": "MyProject",
+        "ADO_PAT": "your-personal-access-token"
+      }
+    }
+  }
+}
