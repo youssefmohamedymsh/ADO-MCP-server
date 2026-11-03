@@ -1,7 +1,22 @@
 {
   "name": "ado-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server wrapping Azure DevOps REST API for AI-powered QC workflows",
+  "description": "MCP server that lets Claude and other AI assistants read Azure DevOps stories, write test cases, log bugs and manage work items",
+  "author": "Youssef Mohamed",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youssefmohamedymsh/ado-mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "azure-devops",
+    "claude",
+    "qa",
+    "test-automation",
+    "test-management"
+  ],
   "type": "module",
   "main": "dist/server.js",
   "scripts": {

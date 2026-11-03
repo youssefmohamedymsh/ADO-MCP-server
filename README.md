@@ -1,227 +1,129 @@
-# ado-mcp-server
+# ADO MCP Server
 
-An MCP (Model Context Protocol) server that wraps the Azure DevOps REST API,
-allowing any MCP-compatible AI (Claude, Copilot, etc.) to query user stories,
-create test cases, log bugs, and manage work items conversationally.
+[![Test & Validate](https://github.com/youssefmohamedymsh/ado-mcp-server/actions/workflows/test.yml/badge.svg)](https://github.com/youssefmohamedymsh/ado-mcp-server/actions/workflows/test.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Node](https://img.shields.io/badge/Node-18%20%7C%2020-339933?logo=node.js&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-server-6E56CF)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
----
+An [MCP](https://modelcontextprotocol.io) server that connects Claude, and any other MCP-compatible assistant, to **Azure DevOps**. Ask in plain language and it reads user stories, writes linked test cases, logs bugs and manages work items for you.
 
-## Tools Included (26 Total)
+> *"Create three test cases for story #1042, covering the happy path, invalid input and a timeout, and link them to the story."*
 
-### Project Selection
-| Tool | Description |
+## Why I built this
+
+Most of a QA engineer's week goes on admin rather than testing: reading stories, turning acceptance criteria into test cases, copying steps into Azure DevOps, and chasing links between stories, tests and bugs. I built this server so an AI assistant can do that work directly in Azure DevOps, while the tester stays in charge of what gets tested and why.
+
+It's one part of an AI-assisted QA workflow. Claude reads a story, drafts the test cases, and creates them in Azure DevOps already linked and formatted, so the team reviews them instead of typing them out.
+
+## What it can do
+
+**26 tools** across three groups:
+
+| Group | Tools |
 |---|---|
-| `set_project` | Select which project subsequent tools operate on, without passing `project` each call (run `list_projects` first to see names) |
+| **Navigate** | `list_projects`, `set_project`, `get_sprints`, `get_area_paths`, `get_board_columns`, `get_team_members` |
+| **Read** | `get_user_stories`, `get_work_item`, `get_child_work_items`, `search_work_items`, `get_work_item_comments`, `get_work_item_updates`, `get_bugs`, `get_test_cases_for_story`, `get_test_runs`, `get_sprint_coverage` |
+| **Create & manage** | `create_test_case`, `create_bug`, `create_user_story`, `create_epic_or_feature`, `create_child_task`, `update_work_item`, `assign_work_item`, `bulk_assign_work_items`, `link_work_items`, `add_attachment` |
 
-### Query & Retrieve
-| Tool | Description |
-|---|---|
-| `get_user_stories` | Fetch user stories by sprint, state, or area path with filters |
-| `get_work_item` | Retrieve a single work item by ID with full details |
-| `get_child_work_items` | Get all child items (tasks, subtasks) of a work item |
-| `get_test_cases_for_story` | List all test cases linked to a user story |
-| `get_team_members` | Fetch team members and their details from the project |
-| `get_test_runs` | Retrieve recent test runs with pass/fail counts |
-| `get_sprint_coverage` | Report test coverage % for stories in a sprint |
-| `get_bugs` | Retrieve bugs by sprint, state, or area with filters |
-| `get_work_item_comments` | Get all comments and discussions on a work item |
-| `get_work_item_updates` | Get revision history and state changes for a work item |
-| `get_sprints` | List all sprints/iterations in the project |
-| `get_area_paths` | List all area paths and team areas in the project |
-| `get_board_columns` | Get current board columns and workflow state |
-| `search_work_items` | Search work items using flexible query criteria |
-| `list_projects` | List all projects in the Azure DevOps organization |
+QA-specific behavior:
+- **Test cases are created with real steps.** Steps and expected results are converted into the XML Azure DevOps uses for test steps, with escaping handled, so they show up properly in Test Plans.
+- **Traceability is built in.** Test cases are linked to their story when they're created, and a bug can be linked to the test case that found it.
+- **Sprint coverage.** `get_sprint_coverage` gives the percentage of stories in a sprint that have at least one test case, and lists the ones that don't.
+- **Switch projects mid-conversation.** Pick a project once with `set_project` and every later call uses it.
 
-### Create & Manage
-| Tool | Description |
-|---|---|
-| `create_test_case` | Create a test case with steps and link to a story |
-| `create_bug` | Log a bug with reproduction steps, linked to a test case |
-| `create_child_task` | Create a child task and link it to a parent work item |
-| `create_user_story` | Create a new user story with acceptance criteria |
-| `create_epic_or_feature` | Create an epic or feature work item |
-| `update_work_item` | Update state, title, priority, or add comments to any work item |
-| `assign_work_item` | Assign a work item to a team member |
-| `bulk_assign_work_items` | Assign multiple work items to the same user |
-| `link_work_items` | Create relationships between work items (parent/child, related, tested-by, etc) |
-| `add_attachment` | Attach files to a work item |
+## How it works
 
----
+```mermaid
+flowchart LR
+    A[Claude Desktop<br/>or other MCP client] -- stdio --> B[ado-mcp-server]
+    B --> C[Tool layer<br/>26 tools, Zod-validated input]
+    C --> D[ADO client<br/>PAT auth, per-project cache,<br/>readable 401/403/404 errors]
+    D -- REST --> E[(Azure DevOps)]
+```
 
-## Setup
+- **Transport:** stdio. The MCP host starts the server as a subprocess, so there's no port to open.
+- **One pattern per tool:** each file in `src/tools/` exports a handler, a Zod input schema and a description. Tests check that every tool is exported and registered consistently.
+- **Shared client:** all HTTP calls go through `src/lib/adoClient.ts`. It handles auth, picks the right project, and turns Azure DevOps errors into messages that say how to fix them.
+- **WIQL helper:** `src/lib/wiql.ts` runs Azure DevOps' two-step query (find IDs, then fetch the items) behind one call.
 
-### 1. Clone & Install
+The full walkthrough is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Quick start
+
+**Requirements:** Node 18 or later, an Azure DevOps organization, and a Personal Access Token with **Work Items (Read & Write)** and **Test Management (Read & Write)**.
 
 ```bash
-git clone https://github.com/your-org/ado-mcp-server.git
+git clone https://github.com/youssefmohamedymsh/ado-mcp-server.git
 cd ado-mcp-server
 npm install
+npm run build
+cp .env.example .env   # then fill in ADO_ORG, ADO_PAT and optionally ADO_PROJECT
 ```
 
-### 2. Configure Environment
+Then add the server to Claude Desktop. [`config/claude_desktop_config.json`](config/claude_desktop_config.json) has a template; put the absolute path to `dist/server.js` in it:
 
-```bash
-cp config/.env.example .env
-# Edit .env and fill in ADO_ORG, ADO_PROJECT, ADO_PAT
-```
-
-**Creating a PAT in Azure DevOps:**
-1. Go to `https://dev.azure.com/{your-org}/_usersSettings/tokens`
-2. Click **New Token**
-3. Grant scopes: **Work Items (Read & Write)** + **Test Plans (Read & Write)**
-4. Copy the token into `.env` as `ADO_PAT`
-
-### 3. Connect to Claude Desktop
-
-Copy the contents of `config/claude_desktop_config.json` into your Claude Desktop config:
-
-- **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-Update the path and credentials in the config, then **restart Claude Desktop**.
+Restart Claude Desktop and try:
 
-### 4. Verify
+> *"List the projects in my organization, then show me the active user stories in Sprint 3."*
 
-Open Claude Desktop — you should see the ADO tools available. Try:
+Values in the Claude Desktop config take priority over the `.env` file.
 
-> *"Show me all active user stories in Sprint 3"*
+## Example prompts
 
----
+- *"What's the test coverage for Sprint 4?"*
+- *"Show me every bug assigned to me that's still Active."*
+- *"Log a bug for test case #1100: the login button does nothing on mobile Safari."*
+- *"Mark #2031 as Resolved and add a comment that regression passed."*
+- *"Create a child task under #1042 to review the acceptance criteria."*
+- *"Link #999 as the parent of #1000, #1001 and #1002."*
 
 ## Development
 
 ```bash
-npm run dev        # Run with hot reload (tsx)
-npm run typecheck  # TypeScript type checking
-npm test           # Run unit tests
-npm run build      # Compile to dist/
+npm run dev         # run with hot reload
+npm run typecheck   # type-check without building
+npm test            # unit tests (Vitest)
+npm run build       # compile to dist/
+node scripts/validateTools.mjs   # check every tool is exported and registered
 ```
 
-### Validation
+CI runs typecheck → build → tool validation → tests on Node 18 and 20 for every push and pull request.
 
-Before committing, validate that all tool files are properly exported:
+### Adding a tool
 
-```bash
-node scripts/validateTools.mjs
-```
+1. Create `src/tools/myTool.ts` exporting `myTool`, `myToolSchema` and `myToolDescription`.
+2. Import it in `src/server.ts` and register it with `server.tool("my_tool", ...)`.
+3. Run `npm test`. The export-validation test fails if any of the wiring is missing.
 
-This script checks:
-- All tool files exist and have proper exports
-- Tool exports match server registrations
-- TypeScript compilation succeeds
-
----
-
-## Documentation
-
-For a detailed explanation of how the project is structured, how each component works, and how to implement new tools, see **[PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)**. This comprehensive guide covers:
-
-- Project architecture and data flow
-- MCP protocol and server communication
-- Core components (adoClient, wiql, formatSteps, types)
-- Tool implementation patterns
-- Configuration and setup steps
-- Example workflows
-- Common troubleshooting issues
-
-This is the recommended reading for team members learning the codebase.
-
----
-
-## Example Prompts
-
-Once connected to Claude, you can say things like:
-
-### Query & Retrieve
-- *"Show me all active user stories in MyProject\\Sprint 4"*
-- *"Get details for work item #1042"*
-- *"What child tasks are assigned to story #887?"*
-- *"Who are the team members on this project?"*
-- *"What test runs have failed recently?"*
-- *"What's the test coverage for Sprint 3?"*
-- *"List all bugs in the current sprint"*
-- *"Show me all comments on work item #2050"*
-- *"What changes have been made to story #1005 recently?"*
-- *"List all sprints in the project"*
-- *"What area paths does our team use?"*
-- *"Search for work items containing 'login'*"
-- *"What projects exist in our organization?"*
-
-### Create & Update
-- *"Create 3 test cases for user story #1042 and link them to it"*
-- *"Log a bug for test case #1100 — the login button doesn't respond on mobile"*
-- *"Create a child task under story #1042 to review acceptance criteria"*
-- *"Create a new user story titled 'User authentication' with acceptance criteria"*
-- *"Create an epic called 'Payment System Redesign'"*
-- *"Mark work item #2031 as Resolved and add a comment saying regression passed"*
-- *"Assign work item #1050 to John Smith"*
-- *"Assign all bugs in Sprint 4 to the QA team lead"*
-- *"Link work item #999 as a parent to #1000, #1001, and #1002"*
-- *"Attach the test results PDF to work item #1200"*
-
----
-
-## Project Structure
+## Project structure
 
 ```
-ado-mcp-server/
-├── src/
-│   ├── tools/                    # One file per MCP tool (24 total)
-│   │   ├── addAttachment.ts
-│   │   ├── assignWorkItem.ts
-│   │   ├── bulkAssignWorkItems.ts
-│   │   ├── createBug.ts
-│   │   ├── createChildTask.ts
-│   │   ├── createEpicOrFeature.ts
-│   │   ├── createTestCase.ts
-│   │   ├── createUserStory.ts
-│   │   ├── getAreaPaths.ts
-│   │   ├── getBoardColumns.ts
-│   │   ├── getBugs.ts
-│   │   ├── getChildWorkItems.ts
-│   │   ├── getSprintCoverage.ts
-│   │   ├── getSprints.ts
-│   │   ├── getTeamMembers.ts
-│   │   ├── getTestCasesForStory.ts
-│   │   ├── getTestRuns.ts
-│   │   ├── getUserStories.ts
-│   │   ├── getWorkItem.ts
-│   │   ├── getWorkItemComments.ts
-│   │   ├── getWorkItemUpdates.ts
-│   │   ├── linkWorkItems.ts
-│   │   ├── listProjects.ts
-│   │   └── searchWorkItems.ts
-│   ├── lib/                      # Shared utilities
-│   │   ├── adoClient.ts          # Axios instance with PAT auth
-│   │   ├── formatSteps.ts        # ADO test steps XML formatter
-│   │   └── wiql.ts               # WIQL query helper
-│   ├── server.ts                 # Entry point — registers all tools
-│   └── types.ts                  # Shared TypeScript interfaces
-├── config/
-│   ├── .env.example              # Template — commit this
-│   └── claude_desktop_config.json
-├── tests/                        # Unit + validation tests
-├── scripts/
-│   └── validateTools.mjs         # Tool export validation script
-├── .github/
-│   └── workflows/
-│       └── test.yml              # CI/CD - tests on every push/PR
-├── package.json
-├── tsconfig.json
-└── README.md
+src/
+  server.ts          entry point: registers all tools over stdio
+  tools/             one file per tool (26)
+  lib/
+    adoClient.ts     auth, per-project client cache, error messages
+    projectContext.ts  the project chosen with set_project
+    wiql.ts          two-step WIQL query helper
+    formatSteps.ts   test steps → Azure DevOps XML
+    loadEnv.ts       loads .env relative to the project, not the working directory
+  types.ts
+tests/               Vitest unit and wiring tests
+scripts/             tool validation and tool count
+config/              Claude Desktop config template
+docs/ARCHITECTURE.md full technical walkthrough
 ```
-
----
 
 ## Security
 
-- Never commit `.env` — it's in `.gitignore`
-- Rotate your PAT every 90 days
-- Scope PAT to minimum required permissions
-- For team use, consider a secrets manager (Azure Key Vault, 1Password) instead of `.env`
-
----
+- `.env` is git-ignored. Never commit a real token.
+- Give the PAT only the two scopes above, and set it to expire.
+- The server only does what your PAT allows, and every write it makes appears in Azure DevOps history under your name.
 
 ## License
 
-MIT
+[MIT](LICENSE) © Youssef Mohamed
